@@ -73,12 +73,12 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             {copied ? (
               <>
                 <Check size={11} className="text-[var(--accent-emerald)]" />
-                <span>Kopyalandı!</span>
+                <span>{t.message.copied}</span>
               </>
             ) : (
               <>
                 <Copy size={11} />
-                <span>Kopyala</span>
+                <span>{t.message.copy}</span>
               </>
             )}
           </Button>
