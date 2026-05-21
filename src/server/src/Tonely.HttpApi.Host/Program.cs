@@ -203,7 +203,15 @@ static string BuildConnectionString()
                $"Port={Env("DB_PORT", "5432")};" +
                $"Database={Env("DB_NAME")};" +
                $"Username={Env("DB_USER")};" +
-               $"Password={Env("DB_PASSWORD")};";
+               $"Password={Env("DB_PASSWORD")};" +
+               "SSL Mode=Require;" +
+               "Trust Server Certificate=true;" +
+               "Include Error Detail=true;" +
+               "Maximum Pool Size=5;" +
+               "Minimum Pool Size=0;" +
+               "Connection Idle Lifetime=300;" +
+               "Keepalive=30;" +
+               "Timeout=30;";
     }
 
     throw new InvalidOperationException(
