@@ -66,6 +66,8 @@ builder.Host.UseSerilog((context, config) =>
         .Enrich.FromLogContext()
         .Enrich.WithProperty("Application", "Tonely")
         .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName)
+        .Enrich.WithProperty("MachineName", Environment.MachineName)
+        .Enrich.WithProperty("ProcessId", Environment.ProcessId)
         .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {CorrelationId} [{SourceContext}]{NewLine}  {Message:lj}{NewLine}{Exception}")
         .WriteTo.File("logs/tonely-.txt",
             rollingInterval: RollingInterval.Day,
@@ -149,6 +151,8 @@ builder.Services.AddMemoryCache();
 
 builder.Services.AddApiVersioningConfig();
 builder.Services.AddSwaggerConfig();
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<TonelyDbContext>(tags: ["ready"]);
 
 builder.Services.AddScoped<IConversationDal, EfConversationDal>();
 builder.Services.AddScoped<IMessageDal, EfMessageDal>();
@@ -191,6 +195,8 @@ app.UseAuthorization();
 app.MapIdentityApi<ApplicationUser>();
 app.MapControllers();
 app.MapHub<MessageHub>("/hubs/messages");
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions { Predicate = c => c.Tags.Contains("ready") });
 
 using (var scope = app.Services.CreateScope())
 {

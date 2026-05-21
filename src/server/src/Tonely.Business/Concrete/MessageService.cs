@@ -103,10 +103,9 @@ public class MessageService : IMessageService
         var history = await _messageDal.GetListAsync(
             m => m.ConversationId == request.ConversationId && m.Id != userMessage.Id);
 
-        var historyCount = history.Count;
         _logger.LogInformation(
             "Chat stream started. User={UserId} Conversation={ConversationId} HistoryCount={HistoryCount}",
-            userId, request.ConversationId, historyCount);
+            userId, request.ConversationId, history.Count);
 
         var sb = new StringBuilder();
         await foreach (var chunk in _aiService.ChatStreamingAsync(history, userMessage.Content, userFirstName, cancellationToken))
@@ -123,12 +122,10 @@ public class MessageService : IMessageService
         };
         await _messageDal.AddAsync(assistantMessage);
 
-        var responseLength = sb.Length;
         _logger.LogInformation(
             "Chat stream completed. User={UserId} Conversation={ConversationId} ResponseLength={Length}",
-            userId, request.ConversationId, responseLength);
+            userId, request.ConversationId, sb.Length);
 
-        var dto = _mapper.Map<MessageDto>(assistantMessage);
-        await onComplete(dto);
+        await onComplete(_mapper.Map<MessageDto>(assistantMessage));
     }
 }
