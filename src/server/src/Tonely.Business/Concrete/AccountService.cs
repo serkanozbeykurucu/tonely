@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Tonely.Business.Abstract;
 using Tonely.Shared.Utilities;
 using Tonely.Entity.Concrete;
@@ -16,17 +17,20 @@ public class AccountService : IAccountService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IValidator<RegisterWithNameRequest> _registerValidator;
     private readonly IValidator<UpdateProfileRequest> _updateProfileValidator;
+    private readonly ILogger<AccountService> _logger;
     private readonly UserUtility _userUtility;
 
     public AccountService(
         UserManager<ApplicationUser> userManager,
         IValidator<RegisterWithNameRequest> registerValidator,
         IValidator<UpdateProfileRequest> updateProfileValidator,
+        ILogger<AccountService> logger,
         UserUtility userUtility)
     {
         _userManager = userManager;
         _registerValidator = registerValidator;
         _updateProfileValidator = updateProfileValidator;
+        _logger = logger;
         _userUtility = userUtility;
     }
 
@@ -47,10 +51,12 @@ public class AccountService : IAccountService
         if (!result.Succeeded)
         {
             var errors = result.Errors.Select(e => e.Description).ToList();
+            _logger.LogWarning("Registration failed for {Email}: {Errors}", request.Email, string.Join(", ", errors));
             throw new Shared.Exceptions.ValidationException(errors);
         }
 
         await _userManager.AddToRoleAsync(user, RoleConstants.Free);
+        _logger.LogInformation("User {Email} registered successfully with role {Role}", request.Email, RoleConstants.Free);
 
         return new Response(ResponseCode.Success, "Registration successful.");
     }
@@ -66,6 +72,7 @@ public class AccountService : IAccountService
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
+            _logger.LogWarning("Profile not found for user {UserId}", userId);
             return new Response<AccountProfileDto>(ResponseCode.NotFound, "User not found.");
         }
 
@@ -85,7 +92,7 @@ public class AccountService : IAccountService
         {
             throw new Shared.Exceptions.ValidationException(validationResult.Errors.Select(e => e.ErrorMessage).ToList());
         }
-        
+
         var userId = _userUtility.GetUserId();
         if (string.IsNullOrEmpty(userId))
         {
@@ -95,6 +102,7 @@ public class AccountService : IAccountService
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
+            _logger.LogWarning("Profile update attempted for non-existent user {UserId}", userId);
             return new Response(ResponseCode.NotFound, "User not found.");
         }
 
@@ -103,9 +111,12 @@ public class AccountService : IAccountService
 
         if (!result.Succeeded)
         {
+            var errors = result.Errors.Select(e => e.Description).ToList();
+            _logger.LogWarning("Profile update failed for user {UserId}: {Errors}", userId, string.Join(", ", errors));
             return new Response(ResponseCode.Fail, "Failed to update profile.");
         }
 
+        _logger.LogInformation("Profile updated for user {UserId}", userId);
         return new Response(ResponseCode.Success, "Profile updated successfully.");
     }
 }

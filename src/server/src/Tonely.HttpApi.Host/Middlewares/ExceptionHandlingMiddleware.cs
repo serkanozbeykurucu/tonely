@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Tonely.Shared.Exceptions;
 using Tonely.Shared.Responses.Concrete;
 using Tonely.Shared.Responses.ComplexTypes;
@@ -23,7 +24,14 @@ public class ExceptionHandlingMiddleware
         }
         catch (BaseException ex)
         {
-            _logger.LogWarning(ex, "Handled exception: {Message}", ex.Message);
+            var userId = context.User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous";
+            var method = context.Request.Method;
+            var path = context.Request.Path;
+
+            _logger.LogWarning(ex,
+                "Handled exception on {Method} {Path} for user {UserId}: {Message}",
+                method, path, userId, ex.Message);
+
             context.Response.StatusCode = ex.StatusCode;
             context.Response.ContentType = "application/json";
 
@@ -37,7 +45,14 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception.");
+            var userId = context.User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous";
+            var method = context.Request.Method;
+            var path = context.Request.Path;
+
+            _logger.LogError(ex,
+                "Unhandled exception on {Method} {Path} for user {UserId}",
+                method, path, userId);
+
             context.Response.StatusCode = 500;
             context.Response.ContentType = "application/json";
             await context.Response.WriteAsJsonAsync(new Response(ResponseCode.Fail, "An unexpected error occurred."));

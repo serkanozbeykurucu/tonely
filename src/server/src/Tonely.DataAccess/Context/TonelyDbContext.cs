@@ -1,4 +1,6 @@
 using System.Linq.Expressions;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Tonely.Entity.Abstract;
@@ -8,7 +10,13 @@ namespace Tonely.DataAccess.Context;
 
 public class TonelyDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, string>
 {
-    public TonelyDbContext(DbContextOptions<TonelyDbContext> options) : base(options) { }
+    private readonly IHttpContextAccessor? _httpContextAccessor;
+
+    public TonelyDbContext(DbContextOptions<TonelyDbContext> options, IHttpContextAccessor? httpContextAccessor = null)
+        : base(options)
+    {
+        _httpContextAccessor = httpContextAccessor;
+    }
 
     public DbSet<Conversation> Conversations { get; set; }
     public DbSet<Message> Messages { get; set; }
@@ -30,6 +38,10 @@ public class TonelyDbContext : IdentityDbContext<ApplicationUser, ApplicationRol
                 parameter);
 
             modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
+
+            modelBuilder.Entity(entityType.ClrType)
+                .Property(nameof(IEntity.Id))
+                .HasDefaultValueSql("gen_random_uuid()");
         }
 
         modelBuilder.Entity<Conversation>(entity =>
@@ -50,6 +62,8 @@ public class TonelyDbContext : IdentityDbContext<ApplicationUser, ApplicationRol
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        var currentUserId = _httpContextAccessor?.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+
         foreach (var entry in ChangeTracker.Entries<IEntity>())
         {
             switch (entry.State)
@@ -59,15 +73,20 @@ public class TonelyDbContext : IdentityDbContext<ApplicationUser, ApplicationRol
                         entry.Entity.Id = Guid.NewGuid();
                     entry.Entity.CreatedAt = DateTime.UtcNow;
                     entry.Entity.IsDeleted = false;
+                    entry.Entity.CreatedBy = currentUserId;
                     break;
 
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = DateTime.UtcNow;
+                    entry.Entity.UpdatedBy = currentUserId;
                     entry.Property(nameof(IEntity.CreatedAt)).IsModified = false;
                     entry.Property(nameof(IEntity.CreatedBy)).IsModified = false;
 
                     if (entry.Entity.IsDeleted && entry.Entity.DeletedAt == null)
+                    {
                         entry.Entity.DeletedAt = DateTime.UtcNow;
+                        entry.Entity.DeletedBy = currentUserId;
+                    }
                     break;
             }
         }

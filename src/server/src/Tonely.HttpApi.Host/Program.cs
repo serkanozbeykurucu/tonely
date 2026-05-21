@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using FluentValidation;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -63,11 +64,13 @@ builder.Host.UseSerilog((context, config) =>
         .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
         .MinimumLevel.Override("Hangfire", LogEventLevel.Warning)
         .Enrich.FromLogContext()
-        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}{NewLine}  {Message:lj}{NewLine}{Exception}")
+        .Enrich.WithProperty("Application", "Tonely")
+        .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName)
+        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {CorrelationId} [{SourceContext}]{NewLine}  {Message:lj}{NewLine}{Exception}")
         .WriteTo.File("logs/tonely-.txt",
             rollingInterval: RollingInterval.Day,
             retainedFileCountLimit: 30,
-            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"));
+            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{CorrelationId}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"));
 
 var connectionString = BuildConnectionString();
 
@@ -159,7 +162,19 @@ builder.Services.AddScoped<UserUtility>();
 
 var app = builder.Build();
 
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseSerilogRequestLogging(opts =>
+{
+    opts.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        var userId = httpContext.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId != null)
+            diagnosticContext.Set("UserId", userId);
+        diagnosticContext.Set("ClientIp", httpContext.Connection.RemoteIpAddress?.ToString());
+    };
+});
 
 if (app.Environment.IsDevelopment())
 {

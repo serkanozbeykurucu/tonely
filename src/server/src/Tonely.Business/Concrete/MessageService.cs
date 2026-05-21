@@ -51,12 +51,14 @@ public class MessageService : IMessageService
         var userId = _userUtility.GetUserId();
         if (string.IsNullOrEmpty(userId))
         {
+            _logger.LogWarning("Unauthenticated access attempt to conversation {ConversationId}", conversationId);
             return new Response(ResponseCode.Unauthorized);
         }
 
         var conversation = await _conversationDal.GetAsync(c => c.Id == conversationId && c.UserId == userId);
-        if (conversation == null)
+        if (conversation is null)
         {
+            _logger.LogWarning("Conversation {ConversationId} not found for user {UserId}", conversationId, userId);
             throw new NotFoundException(nameof(Conversation), conversationId);
         }
 
@@ -74,7 +76,7 @@ public class MessageService : IMessageService
         var userId = _userUtility.GetUserId();
         if (string.IsNullOrEmpty(userId))
         {
-            throw new UnauthorizedAccessException();
+            throw new UnauthorizedException();
         }
 
         var userRole = _userUtility.GetUserRole();
@@ -84,10 +86,10 @@ public class MessageService : IMessageService
 
         var validationResult = await _chatValidator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
-            throw new Shared.Exceptions.ValidationException(validationResult.Errors.Select(e => e.ErrorMessage).ToList());
+            throw new Shared.Exceptions.ValidationException([.. validationResult.Errors.Select(e => e.ErrorMessage)]);
 
         var conversation = await _conversationDal.GetAsync(c => c.Id == request.ConversationId && c.UserId == userId);
-        if (conversation == null)
+        if (conversation is null)
             throw new NotFoundException(nameof(Conversation), request.ConversationId);
 
         var userMessage = new Message
@@ -100,6 +102,11 @@ public class MessageService : IMessageService
 
         var history = await _messageDal.GetListAsync(
             m => m.ConversationId == request.ConversationId && m.Id != userMessage.Id);
+
+        var historyCount = history.Count;
+        _logger.LogInformation(
+            "Chat stream started. User={UserId} Conversation={ConversationId} HistoryCount={HistoryCount}",
+            userId, request.ConversationId, historyCount);
 
         var sb = new StringBuilder();
         await foreach (var chunk in _aiService.ChatStreamingAsync(history, userMessage.Content, userFirstName, cancellationToken))
@@ -116,7 +123,10 @@ public class MessageService : IMessageService
         };
         await _messageDal.AddAsync(assistantMessage);
 
-        _logger.LogInformation("Chat stream completed for conversation {ConversationId}", request.ConversationId);
+        var responseLength = sb.Length;
+        _logger.LogInformation(
+            "Chat stream completed. User={UserId} Conversation={ConversationId} ResponseLength={Length}",
+            userId, request.ConversationId, responseLength);
 
         var dto = _mapper.Map<MessageDto>(assistantMessage);
         await onComplete(dto);

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Tonely.Business.Abstract;
@@ -27,7 +28,8 @@ public class UsageLimitServiceTests
         return Options.Create(s);
     }
 
-    private static UsageLimitService Build(IMessageDal dal, IRateLimiter rateLimiter, IOptions<PlanLimitsSettings> opts) => new(dal, rateLimiter, opts);
+    private static UsageLimitService Build(IMessageDal dal, IRateLimiter rateLimiter, IOptions<PlanLimitsSettings> opts) =>
+        new(dal, rateLimiter, opts, NullLogger<UsageLimitService>.Instance);
 
     [Fact]
     public async Task WhenUnderLimit_Passes()

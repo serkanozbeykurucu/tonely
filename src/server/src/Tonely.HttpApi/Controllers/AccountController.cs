@@ -6,8 +6,9 @@ using Tonely.Shared.Responses.Abstract;
 
 namespace Tonely.HttpApi.Controllers;
 
-[AllowAnonymous]
+[Authorize]
 [ApiController]
+[ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 public class AccountController : ControllerBase
 {
@@ -18,20 +19,19 @@ public class AccountController : ControllerBase
         _service = service;
     }
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IServiceResponse> Register([FromBody] RegisterWithNameRequest request)
     {
         return await _service.RegisterAsync(request);
     }
 
-    [Authorize]
     [HttpGet("profile")]
     public async Task<IServiceResponse> GetProfile()
     {
         return await _service.GetProfileAsync();
     }
 
-    [Authorize]
     [HttpPut("profile")]
     public async Task<IServiceResponse> UpdateProfile([FromBody] UpdateProfileRequest request)
     {

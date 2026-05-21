@@ -106,6 +106,7 @@ public class ConversationService : IConversationService
         }
 
         await _conversationDal.DeleteAsync(conversation);
+        _logger.LogInformation("Conversation {Id} deleted by user {UserId}", id, userId);
         return new Response(ResponseCode.NoContent);
     }
 }
