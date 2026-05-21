@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Tonely.Business/Tonely.Business.csproj" />
+    <Project Path="src/Tonely.DataAccess/Tonely.DataAccess.csproj" />
+    <Project Path="src/Tonely.Dto/Tonely.Dto.csproj" />
+    <Project Path="src/Tonely.Entity/Tonely.Entity.csproj" />
+    <Project Path="src/Tonely.HttpApi.Host/Tonely.HttpApi.Host.csproj" />
+    <Project Path="src/Tonely.HttpApi/Tonely.HttpApi.csproj" />
+    <Project Path="src/Tonely.Shared/Tonely.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Tonely.Business.Tests/Tonely.Business.Tests.csproj" />
+    <Project Path="tests/Tonely.HttpApi.Tests/Tonely.HttpApi.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,31 @@
+# .github/workflows/pr-title-check.yml
+name: PR Title Check
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  check-title:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      statuses: write
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            chore
+            refactor
+            docs
+            style
+            test
+            perf
+            ci
+          requireScope: false
+          subjectPattern: ^.{10,72}$
+          subjectPatternError: "Title must be between 10-72 characters"

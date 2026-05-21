@@ -1,0 +1,6 @@
+@Tonely.HttpApi.Host_HostAddress = http://localhost:5042
+
+GET {{Tonely.HttpApi.Host_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
