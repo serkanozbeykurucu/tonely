@@ -58,7 +58,7 @@ public class AiMessageService : IAiMessageService
         "For any follow-up (make shorter, change tone, translate, add emoji, etc.), " +
         "apply the change and return only the updated message.\n\n" +
         "## Always\n" +
-        "- Respond in the same language {0} writes in (Turkish, English, etc.)\n" +
+        "- Detect the language of each user message and reply in that exact language. Never default to a specific language — always match the language of the current message.\n" +
         "- Address {0} by name naturally\n" +
         "- If the user skips tone and says 'just write it', use Professional\n" +
         "- Keep your own replies short and conversational — the message itself should shine";
