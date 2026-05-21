@@ -25,6 +25,7 @@ using Tonely.HttpApi.Host.Hubs;
 using Tonely.HttpApi.Host.Identity;
 using Tonely.HttpApi.Host.Middlewares;
 using Tonely.Shared.Utilities;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 static string? FindEnvFile()
 {
@@ -195,8 +196,8 @@ app.UseAuthorization();
 app.MapIdentityApi<ApplicationUser>();
 app.MapControllers();
 app.MapHub<MessageHub>("/hubs/messages");
-app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions { Predicate = _ => false });
-app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions { Predicate = c => c.Tags.Contains("ready") });
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = c => c.Tags.Contains("ready") });
 
 using (var scope = app.Services.CreateScope())
 {
@@ -225,8 +226,7 @@ static string BuildConnectionString()
                $"Database={Env("DB_NAME")};" +
                $"Username={Env("DB_USER")};" +
                $"Password={Env("DB_PASSWORD")};" +
-               "SSL Mode=Require;" +
-               "Trust Server Certificate=true;" +
+               "SSL Mode=Prefer;" +
                "Include Error Detail=true;" +
                "Maximum Pool Size=5;" +
                "Minimum Pool Size=0;" +

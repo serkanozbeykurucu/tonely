@@ -8,5 +8,6 @@ public interface IAiMessageService
         IReadOnlyList<Message> history,
         string userMessage,
         string userFirstName,
+        string? locale = null,
         CancellationToken cancellationToken = default);
 }

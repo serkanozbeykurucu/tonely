@@ -26,6 +26,7 @@ public class MessageHub : Hub
         }
 
         var userId = Context.UserIdentifier;
+        var locale = Context.GetHttpContext()?.Request.Headers.AcceptLanguage.FirstOrDefault()?.Split(',')[0].Split('-')[0].Trim();
         var request = new ChatRequest { ConversationId = convId, Content = content };
         var ct = Context.ConnectionAborted;
 
@@ -33,6 +34,7 @@ public class MessageHub : Hub
         {
             await _messageService.ChatStreamAsync(
                 request,
+                locale,
                 onChunk: chunk => Clients.Caller.SendAsync("ReceiveChunk", chunk, ct),
                 onComplete: dto => Clients.Caller.SendAsync("ChatCompleted", dto, ct),
                 cancellationToken: ct);

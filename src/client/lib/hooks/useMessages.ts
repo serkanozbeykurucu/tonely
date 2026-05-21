@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import * as signalR from "@microsoft/signalr";
 import { getMessages } from "../api/messages";
 import { getAccessToken } from "../utils/token";
+import { useLocaleStore } from "../i18n/stores/localeStore";
 import type { MessageDto } from "../types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
@@ -25,9 +26,11 @@ export function useChat() {
   const optimisticIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const locale = useLocaleStore.getState().locale;
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${BASE_URL}/hubs/messages`, {
         accessTokenFactory: () => getAccessToken() ?? "",
+        headers: { "Accept-Language": locale },
       })
       .configureLogging(signalR.LogLevel.None)
       .withAutomaticReconnect()

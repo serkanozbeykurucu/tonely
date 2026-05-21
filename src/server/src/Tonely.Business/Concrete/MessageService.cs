@@ -69,6 +69,7 @@ public class MessageService : IMessageService
 
     public async Task ChatStreamAsync(
         ChatRequest request,
+        string? locale,
         Func<string, Task> onChunk,
         Func<MessageDto, Task> onComplete,
         CancellationToken cancellationToken = default)
@@ -108,7 +109,7 @@ public class MessageService : IMessageService
             userId, request.ConversationId, history.Count);
 
         var sb = new StringBuilder();
-        await foreach (var chunk in _aiService.ChatStreamingAsync(history, userMessage.Content, userFirstName, cancellationToken))
+        await foreach (var chunk in _aiService.ChatStreamingAsync(history, userMessage.Content, userFirstName, locale, cancellationToken))
         {
             sb.Append(chunk);
             await onChunk(chunk);

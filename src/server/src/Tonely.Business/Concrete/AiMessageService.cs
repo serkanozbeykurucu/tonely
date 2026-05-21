@@ -71,10 +71,19 @@ public class AiMessageService : IAiMessageService
         _logger = logger;
     }
 
+    private static readonly Dictionary<string, string> LocaleToLanguage = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["en"] = "English",
+        ["tr"] = "Turkish",
+        ["de"] = "German",
+        ["it"] = "Italian",
+    };
+
     public async IAsyncEnumerable<string> ChatStreamingAsync(
         IReadOnlyList<Message> history,
         string userMessage,
         string userFirstName,
+        string? locale = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var name = string.IsNullOrWhiteSpace(userFirstName) ? "there" : userFirstName;
@@ -88,6 +97,11 @@ public class AiMessageService : IAiMessageService
             chatMessages.Add(new ChatMessage(role, msg.Content));
         }
 
+        var language = locale is not null && LocaleToLanguage.TryGetValue(locale, out var lang) ? lang : null;
+        var languageInstruction = language is not null
+            ? $"The user's app is set to {language}. You MUST reply in {language}. This overrides everything else."
+            : "Detect the language of the user's current message and reply in that exact language.";
+        chatMessages.Add(new ChatMessage(ChatRole.System, languageInstruction));
         chatMessages.Add(new ChatMessage(ChatRole.User, userMessage));
 
         _logger.LogInformation("Starting chat stream with {HistoryCount} history messages", history.Count);
